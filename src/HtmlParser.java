@@ -300,7 +300,9 @@ public class HtmlParser {
                     // get the timedata from the hashmap above
                     TimeData currTimeData = daysData.get(currTimeIdx);
                     // update the value
+                    // update see data
                     currTimeData.see = seeingData.get(i);
+                    // update the dark data
                     currTimeData.alumMag = Double.valueOf(darkData.get(i)[1]);
                     currTimeData.moonAlum = Double.valueOf(darkData.get(i)[2]);
                     //back into day obj
