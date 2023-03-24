@@ -218,7 +218,6 @@ public class HtmlParser {
                 }
                 Node tableData = dataRaw.childNode(5).childNode(0).childNode(0).childNode(1).childNode(0).childNode(0).childNode(1).childNode(0).childNode(0).childNode(1);
 
-                // day, data
                 HashMap<String, Day> D2D_Data = new HashMap<>();
                 List<Node> childNodes = tableData.childNodes();
                 for (int i = 0; i < childNodes.size() - 1; i++) {
@@ -244,6 +243,10 @@ public class HtmlParser {
 
                     if (dateLink.contains("php")) {
                         decoded = decode(dateLink);
+                    } else if(data.contains("Cloud") || data.contains("Clear Sky") || data.contains("Overcast")){
+                        // case for ECMWF Cloud data https://www.cleardarksky.com//c/GrySksObCAkey.html?1
+                        // will have reg. cloud data so we can skip this
+                        continue;
                     } else {
                         darknessValues.push(data);
                         // digest data
@@ -257,7 +260,6 @@ public class HtmlParser {
                             avgMoonIlum = avgMoonIlum / 4;
                             darkData.add(new String[]{Integer.toString(time), String.valueOf(avgLumMag), String.valueOf(avgMoonIlum)});
                         }
-
                         continue;
                     }
 
@@ -272,7 +274,7 @@ public class HtmlParser {
                             // three count
                             // dont add a new obj currDay.daysData.put(decoded[2],currTimeData);
                             // skip after adding to list
-                            seeingData.add(data);
+                            seeingData.add(data + " " + dateLink);
                             continue;
                         }
                         case "W" -> currTimeData.smoke = data;
@@ -308,9 +310,7 @@ public class HtmlParser {
                     //back into day obj
                     daysData.put(currTimeIdx, currTimeData);
                 }
-
-
-                System.out.println(D2D_Data);
+                seeingData.clear();
                 LocAndConData.put(location.getFirst(), D2D_Data);
             } catch (IOException e) {
                 e.printStackTrace();
