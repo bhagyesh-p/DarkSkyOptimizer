@@ -1,3 +1,10 @@
+import GetData.HtmlParser;
+import GetData.PreProcessPair;
+import PostProcessData.DataProcessing;
+import PostProcessData.StarGazingRankingAlgorithm;
+
+import java.io.FileWriter;
+import java.io.IOException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.util.HashMap;
@@ -8,7 +15,7 @@ public class Main {
 
     public static void main(String[] args) {
         HtmlParser htmlParser = new HtmlParser();
-        HashMap<String, HashMap<String, List<Pair<String,String>>>> data = htmlParser.CountryAndStateData;
+        HashMap<String, HashMap<String, List<PreProcessPair<String,String>>>> data = htmlParser.CountryAndStateData;
 
         System.out.println("What country");
         System.out.println(data.keySet());
@@ -30,7 +37,22 @@ public class Main {
 //        }
 
         htmlParser.bestInState(country, state);
-        System.out.println(htmlParser.LocAndConData);
+//        System.out.println(htmlParser.LocAndConData);
+        DataProcessing dataProcessing = new DataProcessing();
+        dataProcessing.convert(htmlParser.LocAndConData);
+//        System.out.println(dataProcessing.LocAndConData);
+        StarGazingRankingAlgorithm starGazingRankingAlgorithm = new StarGazingRankingAlgorithm( dataProcessing.LocAndConData, 3);
+        starGazingRankingAlgorithm.printResults();
+        try {
+            FileWriter writer = new FileWriter("tes0t.txt");
+            writer.write(String.valueOf(dataProcessing.LocAndConData));
+            writer.close();
+            System.out.println("Data has been written to the file.");
+        } catch (IOException e) {
+            System.out.println("An error occurred while writing to the file.");
+            e.printStackTrace();
+        }
+
     }
 
 

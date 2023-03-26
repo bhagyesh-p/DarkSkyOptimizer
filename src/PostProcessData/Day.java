@@ -1,7 +1,9 @@
+package PostProcessData;
+
 import java.util.*;
-import java.util.stream.Collectors;
 
 public class Day {
+    // one full night
     // (hour) time Index, data
     HashMap<String, TimeData> daysData;
     Day(){

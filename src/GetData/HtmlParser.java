@@ -1,3 +1,5 @@
+package GetData;
+
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -16,8 +18,8 @@ import java.util.regex.Pattern;
 
 
 public class HtmlParser {
-    public HashMap<String, HashMap<String, List<Pair<String, String>>>> CountryAndStateData = new HashMap<>();
-    public HashMap<String, HashMap<String, Day>> LocAndConData = new HashMap<>();
+    public HashMap<String, HashMap<String, List<PreProcessPair<String, String>>>> CountryAndStateData = new HashMap<>();
+    public HashMap<String, HashMap<String, PreProcessDay>> LocAndConData = new HashMap<>();
 
     public HtmlParser() {
         processData();
@@ -32,7 +34,7 @@ public class HtmlParser {
             Element rawTable = body.child(2).child(0);
             List<Node> ListOfCountry = rawTable.childNodes();
             for (int i = 1; i < ListOfCountry.size(); i += 2) {
-                HashMap<String, List<Pair<String, String>>> subStateData = new HashMap<>();
+                HashMap<String, List<PreProcessPair<String, String>>> subStateData = new HashMap<>();
 
                 Node country = ListOfCountry.get(i);
                 String countryName = country.childNodes().get(0).childNodes().get(0).attributes().get("name");
@@ -65,9 +67,9 @@ public class HtmlParser {
     }
 
 
-    private List<Pair<String, String>> loadCountryAndStateData(Node state) {
+    private List<PreProcessPair<String, String>> loadCountryAndStateData(Node state) {
         int count = 0;
-        List<Pair<String, String>> filteredListOfLocations = new LinkedList<>();
+        List<PreProcessPair<String, String>> filteredListOfLocations = new LinkedList<>();
         Node stateDataRaw = Objects.requireNonNull(state.parent()).childNode(1);
         List<Node> listOfLocations = stateDataRaw.childNodes();
         for (int i = 0; i < listOfLocations.size(); i++) {
@@ -88,7 +90,7 @@ public class HtmlParser {
                     Node data = locationData.childNode(0).childNode(0).childNode(1).childNode(0);
                     locationData = data.childNode(0);
                     link = data.attr("href");
-                    filteredListOfLocations.add(new Pair<>(locationData.toString(), link));
+                    filteredListOfLocations.add(new PreProcessPair<>(locationData.toString(), link));
 //                    System.out.println("\t \t" + locationData + " " + link);
                 }
 
@@ -101,12 +103,12 @@ public class HtmlParser {
                     }
                     locationData = location.childNode(dataIndex).childNode(0);
                     link = location.childNode(dataIndex).attr("href");
-                    filteredListOfLocations.add(new Pair<>(locationData.toString(), link));
+                    filteredListOfLocations.add(new PreProcessPair<>(locationData.toString(), link));
 //                    System.out.println("\t \t" + locationData + " " + link);
                 } else {
                     link = location.childNode(0).attr("href");
 
-                    filteredListOfLocations.add(new Pair<>(locationData.toString(), link));
+                    filteredListOfLocations.add(new PreProcessPair<>(locationData.toString(), link));
 //                    System.out.println("\t \t" + locationData + " " + link);
                 }
             } else {
@@ -119,7 +121,7 @@ public class HtmlParser {
                     locationData = data.childNode(0);
                     link = data.attr("href");
 
-                    filteredListOfLocations.add(new Pair<>(locationData.toString(), link));
+                    filteredListOfLocations.add(new PreProcessPair<>(locationData.toString(), link));
 //                    System.out.println("\t \t" + locationData + " " + link);
                 }
 
@@ -128,12 +130,12 @@ public class HtmlParser {
                     locationData = location.childNode(0).childNode(0).childNode(0);
                     link = location.childNode(0).childNode(0).attr("href");
 
-                    filteredListOfLocations.add(new Pair<>(locationData.toString(), link));
+                    filteredListOfLocations.add(new PreProcessPair<>(locationData.toString(), link));
 //                    System.out.println("\t \t" + locationData + " " + link);
                 } else {
                     link = location.childNode(0).attr("href");
 
-                    filteredListOfLocations.add(new Pair<>(locationData.toString(), link));
+                    filteredListOfLocations.add(new PreProcessPair<>(locationData.toString(), link));
 //                    System.out.println("\t \t" + locationData + " " + link);
                 }
             }
@@ -161,46 +163,15 @@ public class HtmlParser {
         return sb.toString();
     }
 
-    private String ZuluToPST(String zuluTimeWithOffset) {
-        // Extract offset from string using regular expression
-        Pattern pattern = Pattern.compile("Z([+-]\\d{2}):?(\\d{2})?");
-        Matcher matcher = pattern.matcher(zuluTimeWithOffset);
-        int hoursOffset = 0;
-        int minutesOffset = 0;
-        if (matcher.find()) {
-            hoursOffset = Integer.parseInt(matcher.group(1));
-            if (matcher.group(2) != null) {
-                minutesOffset = Integer.parseInt(matcher.group(2));
-            }
-        }
-
-        // Parse Zulu time to LocalDateTime object
-        LocalDateTime localDateTime = LocalDateTime.parse(zuluTimeWithOffset.substring(0, 19), DateTimeFormatter.ISO_DATE_TIME);
-
-        // Convert to ZonedDateTime in Zulu timezone
-        ZonedDateTime zuluDateTime = ZonedDateTime.of(localDateTime, ZoneId.of("Z"));
-
-        // Apply offset to ZonedDateTime
-        zuluDateTime = zuluDateTime.plusHours(hoursOffset).plusMinutes(minutesOffset);
-
-        // Convert to Pacific Standard Timezone
-        ZonedDateTime pstDateTime = zuluDateTime.withZoneSameInstant(ZoneId.of("America/Los_Angeles"));
-
-        // Format output in desired format
-
-//        System.out.println("PST time: " + pstTime);
-        return pstDateTime.format(DateTimeFormatter.ISO_DATE_TIME);
-    }
-
     public void loadStateConData(String country, String state) {
-        List<Pair<String, String>> listOfLocations = CountryAndStateData.get(country).get(state);
+        List<PreProcessPair<String, String>> listOfLocations = CountryAndStateData.get(country).get(state);
         // limited to 4 values 15m/per aka 1h
         Stack<String> darknessValues = new Stack<>();
         List<String> seeingData = new LinkedList<>();
         List<String[]> darkData = new LinkedList<>();
 
 
-        for (Pair<String, String> location : listOfLocations) {
+        for (PreProcessPair<String, String> location : listOfLocations) {
             System.out.println(location.getFirst());
             String url = "https://www.cleardarksky.com/" + location.getSecond(); // Replace with your desired URL
             try {
@@ -218,9 +189,9 @@ public class HtmlParser {
                 }
                 Node tableData = dataRaw.childNode(5).childNode(0).childNode(0).childNode(1).childNode(0).childNode(0).childNode(1).childNode(0).childNode(0).childNode(1);
 
-                HashMap<String, Day> D2D_Data = new HashMap<>();
+                HashMap<String, PreProcessDay> D2D_Data = new HashMap<>();
                 List<Node> childNodes = tableData.childNodes();
-                for (int i = 0; i < childNodes.size() - 1; i++) {
+                locationLoop:for (int i = 0; i < childNodes.size() - 1; i++) {
                     Node n = childNodes.get(i);
                     if (n instanceof TextNode) {
                         continue;
@@ -263,10 +234,10 @@ public class HtmlParser {
                         continue;
                     }
 
-                    Day currDay = D2D_Data.getOrDefault("1", new Day());
+                    PreProcessDay currDay = D2D_Data.getOrDefault("1", new PreProcessDay());
 
                     String type = decoded[1];
-                    TimeData currTimeData = currDay.daysData.getOrDefault(decoded[2], new TimeData());
+                    PreProcessTimeData currTimeData = currDay.daysData.getOrDefault(decoded[2], new PreProcessTimeData());
                     switch (type) {
                         case "C" -> currTimeData.cloud = data;
                         case "T" -> currTimeData.trans = data;
@@ -281,6 +252,12 @@ public class HtmlParser {
                         case "D" -> currTimeData.wind = data;
                         case "H" -> currTimeData.humidity = data;
                         case "R" -> currTimeData.temp = data;
+                        case "L" -> {
+                            // if we see the sponored feature location, there are extra data
+                            // we can see a href value with L as the case, if that is the case stop processing
+                            // we can go to the next location
+                            continue locationLoop;
+                        }
                         default -> {
                             // the case for darkness
                             currTimeData.alumMag = avgLumMag;
@@ -293,16 +270,17 @@ public class HtmlParser {
                 // process seeing data
                 // process dark data
                 // todo there is only one day, not multiple. they are based on the zulu value, not the decode arr [0] value
-                Day value = D2D_Data.get("1");
+                PreProcessDay value = D2D_Data.get("1");
                 List<String> seqTimeKeys = value.getSeqDateKeys();
                 for (int i = 0; i < seqTimeKeys.size(); i++) {
                     String currTimeIdx = seqTimeKeys.get(i);
 
-                    HashMap<String, TimeData> daysData = value.daysData;
+                    HashMap<String, PreProcessTimeData> daysData = value.daysData;
                     // get the timedata from the hashmap above
-                    TimeData currTimeData = daysData.get(currTimeIdx);
+                    PreProcessTimeData currTimeData = daysData.get(currTimeIdx);
                     // update the value
                     // update see data
+
                     currTimeData.see = seeingData.get(i);
                     // update the dark data
                     currTimeData.alumMag = Double.valueOf(darkData.get(i)[1]);
@@ -311,6 +289,8 @@ public class HtmlParser {
                     daysData.put(currTimeIdx, currTimeData);
                 }
                 seeingData.clear();
+                D2D_Data = cleanup(D2D_Data);
+//                System.out.println(D2D_Data);
                 LocAndConData.put(location.getFirst(), D2D_Data);
             } catch (IOException e) {
                 e.printStackTrace();
@@ -320,7 +300,35 @@ public class HtmlParser {
 
     public void bestInState(String country, String state) {
         loadStateConData(country, state);
+    }
 
+    public HashMap<String, PreProcessDay> cleanup(HashMap<String, PreProcessDay> D2D_Data){
+        HashMap<String, PreProcessDay> newD2D = new HashMap<>();
+        HashMap<String, PreProcessTimeData> hourlyData = new HashMap<>();
+
+        PreProcessDay singleDay = D2D_Data.get("1");
+        Map<String, PreProcessTimeData> sortedMap = new TreeMap<>(singleDay.daysData);
+        int dayCounter = 0;
+        for (Map.Entry<String, PreProcessTimeData> entry : sortedMap.entrySet()) {
+            String key = entry.getKey();
+            PreProcessTimeData value = entry.getValue();
+
+            int hour = Integer.parseInt(value.cloud.substring(0,value.cloud.indexOf(":")));
+
+            // make a copy for the new mapping that will exist in the {some day count} GetData.Day obj
+            hourlyData.put(key, value);
+            if(hour == 5){
+                // create a new day
+                PreProcessDay newDay = new PreProcessDay();
+                // set the temp data to the obj
+                newDay.daysData = hourlyData;
+                // take that obj and set it as  {some day count}, GetData.Day
+                newD2D.put(String.valueOf(dayCounter), newDay);
+                dayCounter++;
+                hourlyData = new HashMap<>();
+            }
+        }
+        return newD2D;
     }
 
     private String[] decode(String dateLink) {
